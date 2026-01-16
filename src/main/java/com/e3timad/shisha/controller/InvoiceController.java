@@ -7,17 +7,19 @@ import com.e3timad.shisha.repository.InvoiceItemRepository;
 import com.e3timad.shisha.repository.InvoiceRepository;
 import com.e3timad.shisha.repository.ProductRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.e3timad.shisha.dto.CreateInvoiceRequest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @CrossOrigin(
         origins = "http://localhost:5173",
         allowedHeaders = "*",
-        methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.OPTIONS }
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
 )
 @RestController
 @RequestMapping("/api/invoices")
@@ -33,6 +35,7 @@ public class InvoiceController {
         this.productRepository = productRepository;
     }
 
+    @Transactional
     @PostMapping
     public Invoice createInvoice(@RequestBody CreateInvoiceRequest request, HttpServletRequest httpRequest) {
         String adminName = (String) httpRequest.getAttribute("username");
@@ -42,7 +45,10 @@ public class InvoiceController {
         List<InvoiceItem> items = new ArrayList<>();
         double totalPrice = 0.0;
         for (CreateInvoiceRequest.Item i : request.getItems()) {
-            Product product = productRepository.findById(i.getProductId()).orElseThrow(() -> new RuntimeException("Product not found"));
+            if (i.getProductId() == null) {
+                throw new RuntimeException("Product ID cannot be null");
+            }
+            Product product = productRepository.findById(i.getProductId()).orElseThrow(() -> new RuntimeException("\n\n\n✅✅✅✅✅\nProduct not found with id: " + i.getProductId()));
             if (product.getQuantity() < i.getQuantity()) {
                 throw new RuntimeException("Not enough stock for product: " + product.getType());
             }
@@ -95,5 +101,50 @@ public class InvoiceController {
 
         return ResponseEntity.ok("Invoice deleted successfully");
     }
+
+    //====================
+    @Transactional
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateInvoice(
+            @PathVariable Long id,
+            @RequestBody CreateInvoiceRequest request) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
+
+        invoice.getItems().clear();
+
+        double total = 0.0;
+
+        for (CreateInvoiceRequest.Item reqItem : request.getItems()) {
+
+            Product product = productRepository.findById(reqItem.getProductId())
+                    .orElseThrow(() ->
+                            new RuntimeException("Product not found: " + reqItem.getProductId())
+                    );
+
+            InvoiceItem item = new InvoiceItem();
+            item.setInvoice(invoice);
+            item.setProduct(product);
+            item.setQuantity(reqItem.getQuantity());
+            item.setIsGift(reqItem.getIsGift());
+            item.setPriceAtSale(product.getSellingPrice());
+
+            // 🧮 احساب السعر
+            if (!Boolean.TRUE.equals(item.getIsGift())) {
+                total += item.getPriceAtSale() * item.getQuantity();
+            }
+
+            invoice.getItems().add(item);
+        }
+
+        // 🔴 السطر المفقود
+        invoice.setTotalPrice(total);
+
+        invoiceRepository.save(invoice);
+        return ResponseEntity.ok(invoice);
+    }
+
+
 
 }
