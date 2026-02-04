@@ -3,6 +3,7 @@ package com.e3timad.shisha.controller;
 
 import com.e3timad.shisha.model.Product;
 import com.e3timad.shisha.repository.ProductRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -67,5 +68,11 @@ public class ProductController {
         return productRepository.save(newProduct);
     }
 
+    @GetMapping("/barcode/{barcode}")
+    public ResponseEntity<Product> getByBarcode(@PathVariable String barcode) {
+        Product product = productRepository.findByBarcode(barcode)
+                .orElseThrow(() -> new RuntimeException("Product not found with barcode: " + barcode));
+        return ResponseEntity.ok(product);
+    }
 
 }

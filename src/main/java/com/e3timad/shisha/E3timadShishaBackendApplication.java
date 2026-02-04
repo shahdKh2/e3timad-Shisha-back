@@ -23,15 +23,15 @@ public class E3timadShishaBackendApplication {
     CommandLineRunner initAdmins(UserRepository userRepository) {
         return args -> {
 
-            if (userRepository.findByUsername("Hamzah").isEmpty()) {
+            if (userRepository.findByUsername("حمزه").isEmpty()) {
                 userRepository.save(
-                        new User("Hamzah", "hamzah123", "ADMIN")
+                        new User("حمزه", "hamzah123", "ADMIN")
                 );
             }
 
-            if (userRepository.findByUsername("Ali").isEmpty()) {
+            if (userRepository.findByUsername("علي").isEmpty()) {
                 userRepository.save(
-                        new User("Ali", "ali123", "ADMIN")
+                        new User("علي", "ali123", "ADMIN")
                 );
             }
 

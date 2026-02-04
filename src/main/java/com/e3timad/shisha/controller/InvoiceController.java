@@ -130,7 +130,6 @@ public class InvoiceController {
             item.setIsGift(reqItem.getIsGift());
             item.setPriceAtSale(product.getSellingPrice());
 
-            // 🧮 احساب السعر
             if (!Boolean.TRUE.equals(item.getIsGift())) {
                 total += item.getPriceAtSale() * item.getQuantity();
             }
@@ -138,7 +137,6 @@ public class InvoiceController {
             invoice.getItems().add(item);
         }
 
-        // 🔴 السطر المفقود
         invoice.setTotalPrice(total);
 
         invoiceRepository.save(invoice);

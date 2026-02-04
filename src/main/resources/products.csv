@@ -1,6 +1,6 @@
 Category,Type/Subtype,Barcode,Quantity,PurchasePrice,SellingPrice,MinSellingPrice,HasOffer,HasGift
-أراجيل,مصري,123456789,50,30.0,45.0,40.0,false,false
-أراجيل,ألماني - قصير,123456790,40,35.0,55.0,50.0,false,false
+أراجيل,مصري,6251581013475,50,30.0,45.0,40.0,false,false
+أراجيل,ألماني - قصير,6251581030113,40,35.0,55.0,50.0,false,false
 أراجيل,ألماني - طويل,123456791,35,40.0,65.0,60.0,false,false
 أراجيل,سوري,123456792,45,28.0,42.0,38.0,false,false
 أراجيل,تركي - قصير,123456793,30,33.0,50.0,45.0,false,false
