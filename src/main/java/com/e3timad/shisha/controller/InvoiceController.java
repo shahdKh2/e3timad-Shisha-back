@@ -60,9 +60,11 @@ public class InvoiceController {
             if (Boolean.TRUE.equals(i.getIsGift())) {
                 item.setPriceAtSale(0.0);
             } else {
-                double price = product.getSellingPrice() * i.getQuantity();
-                item.setPriceAtSale(price);
-                totalPrice += price;
+                double unitPrice = product.getSellingPrice();
+                item.setPriceAtSale(unitPrice);
+
+                totalPrice += unitPrice * i.getQuantity();
+
             }
             product.setQuantity(product.getQuantity() - i.getQuantity());
             productRepository.save(product);
@@ -70,6 +72,23 @@ public class InvoiceController {
         }
         invoice.setItems(items);
         invoice.setTotalPrice(totalPrice);
+// if there is a debt
+        double paidAmount = request.getPaidAmount() != null ? request.getPaidAmount() : totalPrice;
+        double remainingDebt = totalPrice - paidAmount;
+
+        invoice.setPaidAmount(paidAmount);
+        invoice.setRemainingDebt(Math.max(remainingDebt, 0));
+        invoice.setHasDebt(remainingDebt > 0);
+
+
+        if (remainingDebt > 0) {
+            invoice.setCustomerName(request.getCustomerName());
+            invoice.setCustomerPhone(request.getCustomerPhone());
+        } else {
+            invoice.setCustomerName(null);
+            invoice.setCustomerPhone(null);
+        }
+
         invoiceRepository.save(invoice);
         invoiceItemRepository.saveAll(items);
         return invoice;
@@ -86,17 +105,17 @@ public class InvoiceController {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Invoice not found with id: " + id));
 
-        // 1️⃣ Restore product quantities (IMPORTANT)
+        // 1⃣ Restore product quantities (IMPORTANT)
         for (InvoiceItem item : invoice.getItems()) {
             Product product = item.getProduct();
             product.setQuantity(product.getQuantity() + item.getQuantity());
             productRepository.save(product);
         }
 
-        // 2️⃣ Delete invoice items
+        // 2️ Delete invoice items
         invoiceItemRepository.deleteAll(invoice.getItems());
 
-        // 3️⃣ Delete invoice
+        // 3️ Delete invoice
         invoiceRepository.delete(invoice);
 
         return ResponseEntity.ok("Invoice deleted successfully");
@@ -132,6 +151,7 @@ public class InvoiceController {
 
             if (!Boolean.TRUE.equals(item.getIsGift())) {
                 total += item.getPriceAtSale() * item.getQuantity();
+
             }
 
             invoice.getItems().add(item);
@@ -139,10 +159,28 @@ public class InvoiceController {
 
         invoice.setTotalPrice(total);
 
+
+        double paidAmount = request.getPaidAmount() != null
+                ? request.getPaidAmount()
+                : total;
+
+        double remaining = total - paidAmount;
+
+        invoice.setPaidAmount(paidAmount);
+        invoice.setRemainingDebt(Math.max(remaining, 0));
+        invoice.setHasDebt(remaining > 0);
+
+        if (remaining > 0) {
+            invoice.setCustomerName(request.getCustomerName());
+            invoice.setCustomerPhone(request.getCustomerPhone());
+        } else {
+            invoice.setCustomerName(null);
+            invoice.setCustomerPhone(null);
+        }
+
         invoiceRepository.save(invoice);
         return ResponseEntity.ok(invoice);
     }
-
 
 
 }

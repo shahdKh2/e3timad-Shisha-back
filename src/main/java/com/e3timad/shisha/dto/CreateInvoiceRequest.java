@@ -6,11 +6,58 @@ public class CreateInvoiceRequest {
 
     private String adminName;
     private List<Item> items;
+    private Boolean hasDebt;
+    private Double paidAmount;
+
+    private String customerName;
+    private String customerPhone;
+
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+
+    public Boolean getHasDebt() {
+        return hasDebt;
+    }
+
+    public void setHasDebt(Boolean hasDebt) {
+        this.hasDebt = hasDebt;
+    }
+
+    public Double getPaidAmount() {
+        return paidAmount;
+    }
+
+    public void setPaidAmount(Double paidAmount) {
+        this.paidAmount = paidAmount;
+    }
 
     public static class Item {
         private Long productId;
         private Integer quantity;
-        private Boolean isGift; // ✅ أضيفي هذا
+        private Boolean isGift;
+
+        public Boolean getGift() {
+            return isGift;
+        }
+
+        public void setGift(Boolean gift) {
+            isGift = gift;
+        }
+
 
         public Long getProductId() {
             return productId;
