@@ -1,0 +1,43 @@
+# Build output
+target/
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven wrapper jar (downloaded at build time; only-script distribution)
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE / editor files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+.apt_generated
+.springBeans
+.sts4-cache
+
+# Git & VCS
+.git/
+.gitignore
+.gitattributes
+
+# Docs / misc
+README.md
+HELP.md
+
+# Logs & local runtime files
+*.log
+logs/
+
+# Docker files themselves (not needed inside the build context)
+Dockerfile
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
