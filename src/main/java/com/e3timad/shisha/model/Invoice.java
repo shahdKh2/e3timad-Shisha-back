@@ -27,7 +27,7 @@ public class Invoice {
 
     private String customerName;
     private String customerPhone;
-
+    private Double manualDiscount;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
@@ -76,22 +76,6 @@ public class Invoice {
         this.totalPrice = totalPrice;
     }
 
-    public List<InvoiceItem> getItems() {
-        return items;
-    }
-
-    public void setItems(List<InvoiceItem> items) {
-        this.items = items;
-    }
-
-    public Boolean getHasDebt() {
-        return hasDebt;
-    }
-
-    public void setHasDebt(Boolean hasDebt) {
-        this.hasDebt = hasDebt;
-    }
-
     public Double getPaidAmount() {
         return paidAmount;
     }
@@ -108,6 +92,14 @@ public class Invoice {
         this.remainingDebt = remainingDebt;
     }
 
+    public Boolean getHasDebt() {
+        return hasDebt;
+    }
+
+    public void setHasDebt(Boolean hasDebt) {
+        this.hasDebt = hasDebt;
+    }
+
     public String getCustomerName() {
         return customerName;
     }
@@ -122,5 +114,29 @@ public class Invoice {
 
     public void setCustomerPhone(String customerPhone) {
         this.customerPhone = customerPhone;
+    }
+
+    public Double getManualDiscount() {
+        return manualDiscount;
+    }
+
+    public void setManualDiscount(Double manualDiscount) {
+        this.manualDiscount = manualDiscount;
+    }
+
+    public List<InvoiceItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<InvoiceItem> items) {
+        this.items = items;
+    }
+
+    public List<InvoiceEditHistory> getEditHistory() {
+        return editHistory;
+    }
+
+    public void setEditHistory(List<InvoiceEditHistory> editHistory) {
+        this.editHistory = editHistory;
     }
 }

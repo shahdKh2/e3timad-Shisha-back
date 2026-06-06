@@ -1,13 +1,8 @@
 package com.e3timad.shisha.controller;
 
-import com.e3timad.shisha.model.Invoice;
-import com.e3timad.shisha.model.InvoiceEditHistory;
-import com.e3timad.shisha.model.InvoiceItem;
-import com.e3timad.shisha.model.Product;
-import com.e3timad.shisha.repository.InvoiceEditHistoryRepository;
-import com.e3timad.shisha.repository.InvoiceItemRepository;
-import com.e3timad.shisha.repository.InvoiceRepository;
-import com.e3timad.shisha.repository.ProductRepository;
+import com.e3timad.shisha.model.*;
+import com.e3timad.shisha.repository.*;
+import com.e3timad.shisha.service.PricingService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,72 +28,61 @@ public class InvoiceController {
     private final ProductRepository productRepository;
     @Autowired
     private InvoiceEditHistoryRepository historyRepository;
+    @Autowired
+    private ProductOfferRepository productOfferRepository;
+
+    @Autowired
+    private PricingService pricingService;
 
     public InvoiceController(InvoiceRepository invoiceRepository, InvoiceItemRepository invoiceItemRepository, ProductRepository productRepository) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceItemRepository = invoiceItemRepository;
         this.productRepository = productRepository;
     }
-
     @Transactional
     @PostMapping
-    public Invoice createInvoice(@RequestBody CreateInvoiceRequest request, HttpServletRequest httpRequest) {
+    public Invoice createInvoice(@RequestBody CreateInvoiceRequest request,
+                                 HttpServletRequest httpRequest) {
+
         String adminName = (String) httpRequest.getAttribute("username");
-        System.out.println("\n0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n\nadminName: " + adminName);
+
         Invoice invoice = new Invoice();
         invoice.setAdminName(adminName);
+
         List<InvoiceItem> items = new ArrayList<>();
-        double totalPrice = 0.0;
-        for (CreateInvoiceRequest.Item i : request.getItems()) {
-            if (i.getProductId() == null) {
-                throw new RuntimeException("Product ID cannot be null");
-            }
-            Product product = productRepository.findById(i.getProductId()).orElseThrow(() -> new RuntimeException("\n\n\n✅✅✅✅✅\nProduct not found with id: " + i.getProductId()));
-            if (product.getQuantity() < i.getQuantity()) {
-                throw new RuntimeException("Not enough stock for product: " + product.getType());
-            }
-            InvoiceItem item = new InvoiceItem();
-            item.setProduct(product);
-            item.setQuantity(i.getQuantity());
-            item.setInvoice(invoice);
-            item.setIsGift(i.getIsGift());
-            if (Boolean.TRUE.equals(i.getIsGift())) {
-                item.setPriceAtSale(0.0);
-            } else {
-                double unitPrice = product.getSellingPrice();
-                item.setPriceAtSale(unitPrice);
 
-                totalPrice += unitPrice * i.getQuantity();
+        double totalPrice = buildInvoiceItems(invoice, request.getItems(), items);
 
-            }
-            product.setQuantity(product.getQuantity() - i.getQuantity());
-            productRepository.save(product);
-            items.add(item);
-        }
+        double manualDiscount = request.getManualDiscount() != null
+                ? request.getManualDiscount()
+                : 0.0;
+
+        double finalTotal = Math.max(totalPrice - manualDiscount, 0);
+
         invoice.setItems(items);
-        invoice.setTotalPrice(totalPrice);
-// if there is a debt
-        double paidAmount = request.getPaidAmount() != null ? request.getPaidAmount() : totalPrice;
-        double remainingDebt = totalPrice - paidAmount;
+        invoice.setTotalPrice(finalTotal);
+        invoice.setManualDiscount(manualDiscount);
+
+        double paidAmount = request.getPaidAmount() != null
+                ? request.getPaidAmount()
+                : finalTotal;
+
+        double remaining = finalTotal - paidAmount;
 
         invoice.setPaidAmount(paidAmount);
-        invoice.setRemainingDebt(Math.max(remainingDebt, 0));
-        invoice.setHasDebt(remainingDebt > 0);
+        invoice.setRemainingDebt(Math.max(remaining, 0));
+        invoice.setHasDebt(remaining > 0);
 
-
-        if (remainingDebt > 0) {
+        if (remaining > 0) {
             invoice.setCustomerName(request.getCustomerName());
             invoice.setCustomerPhone(request.getCustomerPhone());
-        } else {
-            invoice.setCustomerName(null);
-            invoice.setCustomerPhone(null);
         }
 
         invoiceRepository.save(invoice);
         invoiceItemRepository.saveAll(items);
+
         return invoice;
     }
-
     @GetMapping
     public List<Invoice> getAllInvoices() {
         return invoiceRepository.findAll();
@@ -125,140 +109,114 @@ public class InvoiceController {
 
         return ResponseEntity.ok("Invoice deleted successfully");
     }
+    @Transactional
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateInvoice(
+            @PathVariable Long id,
+            @RequestBody CreateInvoiceRequest request,
+            HttpServletRequest httpRequest) {
 
-//    //====================
-//    @Transactional
-//    @PutMapping("/{id}")
-//    public ResponseEntity<?> updateInvoice(
-//            @PathVariable Long id,
-//            @RequestBody CreateInvoiceRequest request) {
-//
-//        Invoice invoice = invoiceRepository.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Invoice not found"));
-//
-//        invoice.getItems().clear();
-//
-//        double total = 0.0;
-//
-//        for (CreateInvoiceRequest.Item reqItem : request.getItems()) {
-//
-//            Product product = productRepository.findById(reqItem.getProductId())
-//                    .orElseThrow(() ->
-//                            new RuntimeException("Product not found: " + reqItem.getProductId())
-//                    );
-//
-//            InvoiceItem item = new InvoiceItem();
-//            item.setInvoice(invoice);
-//            item.setProduct(product);
-//            item.setQuantity(reqItem.getQuantity());
-//            item.setIsGift(reqItem.getIsGift());
-//            item.setPriceAtSale(product.getSellingPrice());
-//
-//            if (!Boolean.TRUE.equals(item.getIsGift())) {
-//                total += item.getPriceAtSale() * item.getQuantity();
-//
-//            }
-//
-//            invoice.getItems().add(item);
-//        }
-//
-//        invoice.setTotalPrice(total);
-//
-//
-//        double paidAmount = request.getPaidAmount() != null
-//                ? request.getPaidAmount()
-//                : total;
-//
-//        double remaining = total - paidAmount;
-//
-//        invoice.setPaidAmount(paidAmount);
-//        invoice.setRemainingDebt(Math.max(remaining, 0));
-//        invoice.setHasDebt(remaining > 0);
-//
-//        if (remaining > 0) {
-//            invoice.setCustomerName(request.getCustomerName());
-//            invoice.setCustomerPhone(request.getCustomerPhone());
-//        } else {
-//            invoice.setCustomerName(null);
-//            invoice.setCustomerPhone(null);
-//        }
-//
-//        invoiceRepository.save(invoice);
-//        return ResponseEntity.ok(invoice);
-//    }
-@Transactional
-@PutMapping("/{id}")
-public ResponseEntity<?> updateInvoice(
-        @PathVariable Long id,
-        @RequestBody CreateInvoiceRequest request,
-        HttpServletRequest httpRequest) {
+        String adminName = (String) httpRequest.getAttribute("username");
 
-    String adminName = (String) httpRequest.getAttribute("username");
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
 
-    Invoice invoice = invoiceRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Invoice not found"));
+        invoice.getItems().clear();
 
-    invoice.getItems().clear();
+        List<InvoiceItem> items = new ArrayList<>();
 
-    double total = 0.0;
+        double totalPrice = buildInvoiceItems(invoice, request.getItems(), items);
 
-    for (CreateInvoiceRequest.Item reqItem : request.getItems()) {
+        double manualDiscount = request.getManualDiscount() != null
+                ? request.getManualDiscount()
+                : 0.0;
 
-        Product product = productRepository.findById(reqItem.getProductId())
-                .orElseThrow(() ->
-                        new RuntimeException("Product not found: " + reqItem.getProductId())
-                );
+        double finalTotal = Math.max(totalPrice - manualDiscount, 0);
 
-        InvoiceItem item = new InvoiceItem();
-        item.setInvoice(invoice);
-        item.setProduct(product);
-        item.setQuantity(reqItem.getQuantity());
-        item.setIsGift(reqItem.getIsGift());
-        item.setPriceAtSale(product.getSellingPrice());
+        invoice.setItems(items);
+        invoice.setTotalPrice(finalTotal);
+        invoice.setManualDiscount(manualDiscount);
 
-        if (!Boolean.TRUE.equals(item.getIsGift())) {
-            total += item.getPriceAtSale() * item.getQuantity();
+        double paidAmount = request.getPaidAmount() != null
+                ? request.getPaidAmount()
+                : finalTotal;
+
+        double remaining = finalTotal - paidAmount;
+
+        invoice.setPaidAmount(paidAmount);
+        invoice.setRemainingDebt(Math.max(remaining, 0));
+        invoice.setHasDebt(remaining > 0);
+
+        if (remaining > 0) {
+            invoice.setCustomerName(request.getCustomerName());
+            invoice.setCustomerPhone(request.getCustomerPhone());
+        } else {
+            invoice.setCustomerName(null);
+            invoice.setCustomerPhone(null);
         }
 
-        invoice.getItems().add(item);
+        // history
+        InvoiceEditHistory history = new InvoiceEditHistory();
+        history.setInvoice(invoice);
+        history.setAdminName(adminName);
+        history.setEditedAt(java.time.LocalDateTime.now());
+
+        historyRepository.save(history);
+
+        invoiceRepository.save(invoice);
+
+        return ResponseEntity.ok(invoice);
     }
-
-    invoice.setTotalPrice(total);
-
-    double paidAmount = request.getPaidAmount() != null
-            ? request.getPaidAmount()
-            : total;
-
-    double remaining = total - paidAmount;
-
-    invoice.setPaidAmount(paidAmount);
-    invoice.setRemainingDebt(Math.max(remaining, 0));
-    invoice.setHasDebt(remaining > 0);
-
-    if (remaining > 0) {
-        invoice.setCustomerName(request.getCustomerName());
-        invoice.setCustomerPhone(request.getCustomerPhone());
-    } else {
-        invoice.setCustomerName(null);
-        invoice.setCustomerPhone(null);
-    }
-
-    // ⭐ SAVE EDIT HISTORY
-    InvoiceEditHistory history = new InvoiceEditHistory();
-    history.setInvoice(invoice);
-    history.setAdminName(adminName);
-    history.setEditedAt(java.time.LocalDateTime.now());
-
-    historyRepository.save(history);
-
-    invoiceRepository.save(invoice);
-
-    return ResponseEntity.ok(invoice);
-}
 
     @GetMapping("/{id}/history")
     public List<InvoiceEditHistory> getInvoiceHistory(@PathVariable Long id) {
         return historyRepository.findByInvoiceId(id);
+    }
+    private double buildInvoiceItems(
+            Invoice invoice,
+            List<CreateInvoiceRequest.Item> requestItems,
+            List<InvoiceItem> itemsList
+    ) {
+
+        double totalPrice = 0.0;
+
+        for (CreateInvoiceRequest.Item i : requestItems) {
+
+            Product product = productRepository.findById(i.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+
+            if (product.getQuantity() < i.getQuantity()) {
+                throw new RuntimeException("Not enough stock for: " + product.getType());
+            }
+
+            InvoiceItem item = new InvoiceItem();
+            item.setProduct(product);
+            item.setQuantity(i.getQuantity());
+            item.setInvoice(invoice);
+            item.setIsGift(i.getIsGift());
+
+            if (Boolean.TRUE.equals(i.getIsGift())) {
+                item.setPriceAtSale(0.0);
+            } else {
+
+                List<ProductOffer> offers =
+                        productOfferRepository.findByProduct(product);
+
+                double finalPrice =
+                        pricingService.calculateItemPrice(product, i.getQuantity(), offers);
+
+                item.setPriceAtSale(finalPrice);
+
+                totalPrice += finalPrice;
+            }
+
+            product.setQuantity(product.getQuantity() - i.getQuantity());
+            productRepository.save(product);
+
+            itemsList.add(item);
+        }
+
+        return totalPrice;
     }
 
 

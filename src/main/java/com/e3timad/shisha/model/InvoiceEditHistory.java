@@ -3,7 +3,6 @@ package com.e3timad.shisha.model;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-
 @Entity
 public class InvoiceEditHistory {
 
@@ -18,7 +17,6 @@ public class InvoiceEditHistory {
     @ManyToOne
     @JoinColumn(name = "invoice_id")
     private Invoice invoice;
-
 
     public Long getId() {
         return id;

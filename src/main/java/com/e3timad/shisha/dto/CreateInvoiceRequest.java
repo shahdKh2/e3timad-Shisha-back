@@ -12,7 +12,7 @@ public class CreateInvoiceRequest {
     private String customerName;
     private String customerPhone;
 
-
+    private Double manualDiscount;
     public String getCustomerName() {
         return customerName;
     }
@@ -44,7 +44,13 @@ public class CreateInvoiceRequest {
     public void setPaidAmount(Double paidAmount) {
         this.paidAmount = paidAmount;
     }
+    public Double getManualDiscount() {
+        return manualDiscount;
+    }
 
+    public void setManualDiscount(Double manualDiscount) {
+        this.manualDiscount = manualDiscount;
+    }
     public static class Item {
         private Long productId;
         private Integer quantity;

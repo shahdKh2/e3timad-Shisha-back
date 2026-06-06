@@ -2,6 +2,10 @@ package com.e3timad.shisha.model;
 
 import jakarta.persistence.*;
 
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(
         name = "products",
@@ -28,6 +32,10 @@ public class Product {
     // 🔹 Flags
     private Boolean hasOffer;          // عروض
     private Boolean hasGift;           // هدية
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    private List<ProductOffer> offers;
 
     // 🔹 Constructors
     public Product() {
@@ -150,5 +158,13 @@ public class Product {
 
     public void setProfit(Double profit) {
         this.profit = profit;
+    }
+
+    public List<ProductOffer> getOffers() {
+        return offers;
+    }
+
+    public void setOffers(List<ProductOffer> offers) {
+        this.offers = offers;
     }
 }

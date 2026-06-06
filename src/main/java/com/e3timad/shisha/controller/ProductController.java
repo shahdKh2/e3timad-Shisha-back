@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "http://localhost:5173") // Vite front port
 public class ProductController {
 
     private final ProductRepository productRepository;
@@ -74,5 +74,7 @@ public class ProductController {
                 .orElseThrow(() -> new RuntimeException("Product not found with barcode: " + barcode));
         return ResponseEntity.ok(product);
     }
+
+
 
 }

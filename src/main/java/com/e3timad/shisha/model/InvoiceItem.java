@@ -17,6 +17,13 @@ public class InvoiceItem {
     private Integer quantity;
     private Double priceAtSale; // سعر المنتج وقت الشراء
 
+
+    // ********* POS System ********
+    private Double originalPrice;
+    private Double offerDiscount;
+    private Double manualDiscountShare;
+    //
+
     @ManyToOne
     @JoinColumn(name = "invoice_id")
     @JsonBackReference
@@ -24,14 +31,36 @@ public class InvoiceItem {
 
     private Boolean isGift;
 
-    // getters & setters
-
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Double getOriginalPrice() {
+        return originalPrice;
+    }
+
+    public void setOriginalPrice(Double originalPrice) {
+        this.originalPrice = originalPrice;
+    }
+
+    public Double getOfferDiscount() {
+        return offerDiscount;
+    }
+
+    public void setOfferDiscount(Double offerDiscount) {
+        this.offerDiscount = offerDiscount;
+    }
+
+    public Double getManualDiscountShare() {
+        return manualDiscountShare;
+    }
+
+    public void setManualDiscountShare(Double manualDiscountShare) {
+        this.manualDiscountShare = manualDiscountShare;
     }
 
     public Product getProduct() {
@@ -66,7 +95,7 @@ public class InvoiceItem {
         this.invoice = invoice;
     }
 
-    public Boolean getIsGift() {
+    public Boolean getGift() {
         return isGift;
     }
 
