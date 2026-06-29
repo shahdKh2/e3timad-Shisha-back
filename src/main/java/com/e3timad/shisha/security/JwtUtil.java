@@ -8,7 +8,9 @@ import java.util.Date;
 
 public class JwtUtil {
 
-    private static final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private static final String SECRET =
+            "01234567890123456789012345678901";
+    private static final Key key = Keys.hmacShaKeyFor(SECRET.getBytes());
     private static final long EXPIRATION = 1000 * 60 * 60 * 24; // 24 ساعة
 
     public static String generateToken(String username, String role) {
