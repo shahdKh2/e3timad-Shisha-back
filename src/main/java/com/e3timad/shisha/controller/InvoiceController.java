@@ -170,10 +170,10 @@ public class InvoiceController {
         invoice.getItems().addAll(newItems);
 
 //    00000000000000000000000000000000000
-        // ✅ SAVE FIRST
+        //SAVE FIRST
         invoiceRepository.save(invoice);
 
-        // ✅ THEN HISTORY (IMPORTANT)
+        //  THEN HISTORY (IMPORTANT)
         InvoiceEditHistory history = new InvoiceEditHistory();
         history.setInvoice(invoice);
         history.setAdminName(adminName);
@@ -225,7 +225,7 @@ public class InvoiceController {
                 totalPrice += finalPrice;
             }
 
-            // ✅ reduce stock ONLY here (ok)
+            //  reduce stock ONLY here (ok)
             product.setQuantity(product.getQuantity() - i.getQuantity());
             productRepository.save(product);
 
