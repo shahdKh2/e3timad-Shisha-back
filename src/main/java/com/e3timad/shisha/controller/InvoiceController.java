@@ -168,7 +168,7 @@ public class InvoiceController {
 
         // attach new items safely
         invoice.getItems().addAll(newItems);
-
+//---
 //    000000000000--HISTORY--0000000000000000
         //SAVE FIRST
         invoiceRepository.save(invoice);
