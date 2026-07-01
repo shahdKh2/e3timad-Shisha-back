@@ -1,5 +1,6 @@
 package com.e3timad.shisha.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -15,6 +16,7 @@ public class Invoice {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private Long invoiceId;
 
     private LocalDateTime createdAt;   // تاريخ + وقت تلقائي
     private String adminName;           // اسم الأدمن
@@ -29,9 +31,11 @@ public class Invoice {
     private String customerPhone;
     private Double manualDiscount;
 
+
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<InvoiceItem> items = new ArrayList<>();
+
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL)
     private List<InvoiceEditHistory> editHistory = new ArrayList<>();
@@ -139,4 +143,7 @@ public class Invoice {
     public void setEditHistory(List<InvoiceEditHistory> editHistory) {
         this.editHistory = editHistory;
     }
+
+
 }
+

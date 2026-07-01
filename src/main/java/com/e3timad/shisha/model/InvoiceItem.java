@@ -1,6 +1,7 @@
 package com.e3timad.shisha.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -24,6 +25,7 @@ public class InvoiceItem {
     private Double manualDiscountShare;
     //
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "invoice_id")
     @JsonBackReference

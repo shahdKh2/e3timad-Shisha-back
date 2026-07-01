@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.e3timad.shisha.dto.CreateInvoiceRequest;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -113,66 +114,76 @@ public class InvoiceController {
     }
 
 
+    //=========
+    @Transactional
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateInvoice(
+            @PathVariable Long id,
+            @RequestBody CreateInvoiceRequest request,
+            HttpServletRequest httpRequest
+    ) {
 
-//=========
-@Transactional
-@PutMapping("/{id}")
-public ResponseEntity<?> updateInvoice(
-        @PathVariable Long id,
-        @RequestBody CreateInvoiceRequest request,
-        HttpServletRequest httpRequest
-) {
+        String adminName = (String) httpRequest.getAttribute("username");
 
-    String adminName = (String) httpRequest.getAttribute("username");
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found"));
 
-    Invoice invoice = invoiceRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Invoice not found"));
+        // restore old stock BEFORE modifying
+        for (InvoiceItem oldItem : invoice.getItems()) {
+            Product p = oldItem.getProduct();
+            p.setQuantity(p.getQuantity() + oldItem.getQuantity());
+            productRepository.save(p);
+        }
 
-    // restore old stock BEFORE modifying
-    for (InvoiceItem oldItem : invoice.getItems()) {
-        Product p = oldItem.getProduct();
-        p.setQuantity(p.getQuantity() + oldItem.getQuantity());
-        productRepository.save(p);
+        // clear old items properly (IMPORTANT)
+        invoice.getItems().clear();
+
+        List<InvoiceItem> newItems = new ArrayList<>();
+
+        double total = buildInvoiceItems(invoice, request.getItems(), newItems);
+
+        double manualDiscount = request.getManualDiscount() != null
+                ? request.getManualDiscount()
+                : 0.0;
+
+        double finalTotal = Math.max(total - manualDiscount, 0);
+
+        double paidAmount = request.getPaidAmount() != null
+                ? request.getPaidAmount()
+                : finalTotal;
+
+        double remaining = finalTotal - paidAmount;
+
+        invoice.setAdminName(adminName);
+        invoice.setTotalPrice(finalTotal);
+        invoice.setManualDiscount(manualDiscount);
+        invoice.setPaidAmount(paidAmount);
+        invoice.setRemainingDebt(Math.max(remaining, 0));
+        invoice.setHasDebt(remaining > 0);
+
+        if (remaining > 0) {
+            invoice.setCustomerName(request.getCustomerName());
+            invoice.setCustomerPhone(request.getCustomerPhone());
+        }
+
+        // attach new items safely
+        invoice.getItems().addAll(newItems);
+
+//    00000000000000000000000000000000000
+        // ✅ SAVE FIRST
+        invoiceRepository.save(invoice);
+
+        // ✅ THEN HISTORY (IMPORTANT)
+        InvoiceEditHistory history = new InvoiceEditHistory();
+        history.setInvoice(invoice);
+        history.setAdminName(adminName);
+        history.setEditedAt(LocalDateTime.now());
+//    00000000000000000000000000000000000
+//        invoiceRepository.save(invoice);
+        historyRepository.save(history);
+
+        return ResponseEntity.ok(invoice);
     }
-
-    // clear old items properly (IMPORTANT)
-    invoice.getItems().clear();
-
-    List<InvoiceItem> newItems = new ArrayList<>();
-
-    double total = buildInvoiceItems(invoice, request.getItems(), newItems);
-
-    double manualDiscount = request.getManualDiscount() != null
-            ? request.getManualDiscount()
-            : 0.0;
-
-    double finalTotal = Math.max(total - manualDiscount, 0);
-
-    double paidAmount = request.getPaidAmount() != null
-            ? request.getPaidAmount()
-            : finalTotal;
-
-    double remaining = finalTotal - paidAmount;
-
-    invoice.setAdminName(adminName);
-    invoice.setTotalPrice(finalTotal);
-    invoice.setManualDiscount(manualDiscount);
-    invoice.setPaidAmount(paidAmount);
-    invoice.setRemainingDebt(Math.max(remaining, 0));
-    invoice.setHasDebt(remaining > 0);
-
-    if (remaining > 0) {
-        invoice.setCustomerName(request.getCustomerName());
-        invoice.setCustomerPhone(request.getCustomerPhone());
-    }
-
-    // attach new items safely
-    invoice.getItems().addAll(newItems);
-
-    invoiceRepository.save(invoice);
-
-    return ResponseEntity.ok(invoice);
-}
 
 //    ===========
 
@@ -224,4 +235,15 @@ public ResponseEntity<?> updateInvoice(
         return totalPrice;
     }
 
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<InvoiceEditHistory>> getInvoiceHistory(@PathVariable Long id) {
+
+        if (!invoiceRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<InvoiceEditHistory> history = historyRepository.findByInvoiceId(id);
+
+        return ResponseEntity.ok(history != null ? history : new ArrayList<>());
+    }
 }

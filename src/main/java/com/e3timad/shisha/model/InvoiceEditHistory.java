@@ -1,8 +1,11 @@
 package com.e3timad.shisha.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+
 @Entity
 public class InvoiceEditHistory {
 
@@ -16,6 +19,7 @@ public class InvoiceEditHistory {
 
     @ManyToOne
     @JoinColumn(name = "invoice_id")
+    @JsonBackReference
     private Invoice invoice;
 
     public Long getId() {
@@ -41,6 +45,7 @@ public class InvoiceEditHistory {
     public void setEditedAt(LocalDateTime editedAt) {
         this.editedAt = editedAt;
     }
+
 
     public Invoice getInvoice() {
         return invoice;
