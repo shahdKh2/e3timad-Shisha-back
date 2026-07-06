@@ -1,6 +1,6 @@
 # ===== Stage 1: Build the JAR using the Maven Wrapper =====
 # Java 17 matches <java.version>17</java.version> in pom.xml (Spring Boot 4.0 baseline).
-FROM eclipse-temurin:17-jdk AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
 # Copy the Maven wrapper first so dependency resolution can be cached
@@ -14,7 +14,7 @@ COPY src/ src/
 RUN ./mvnw -B clean package -DskipTests
 
 # ===== Stage 2: Lightweight runtime image =====
-FROM eclipse-temurin:17-jre AS runtime
+FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
 
 # Run as a non-root user.
